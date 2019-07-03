@@ -16,11 +16,7 @@ namespace QueueReadingChannelsSample
 
         public BoundedMessageChannel(ILogger<BoundedMessageChannel> logger)
         {
-            var options = new BoundedChannelOptions(MaxMessagesInChannel)
-            {
-                SingleReader = true,
-                SingleWriter = true
-            };
+            var options = new BoundedChannelOptions(MaxMessagesInChannel);
 
             _channel = Channel.CreateBounded<Message>(options);
 
