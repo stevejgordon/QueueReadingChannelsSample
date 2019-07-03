@@ -39,13 +39,22 @@ namespace QueueReadingChannelsSample
                 // not passing cancellation into async method so that we try to drain the channel on shutdown
                 await foreach (var message in _boundedMessageChannel.ReadAllAsync())
                 {
-                    // process the message here
+                    try
+                    {
+                        // process the message here
 
-                    await Task.Delay(500); // simulate processing work
+                        await Task.Delay(500); // simulate processing work
 
-                    // delete the message
-
-                    count++;
+                        count++;
+                    }
+                    catch
+                    {
+                        // if errors occur, we will probably send this to a poison queue
+                    }
+                    finally
+                    {
+                        // delete the message from the main queue
+                    }                    
 
                     _logger.LogInformation("Read and processed message with ID '{MessageId}' from the channel in instance {Instance}.", message.MessageId, instance);
                 }
