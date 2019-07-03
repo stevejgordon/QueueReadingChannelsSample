@@ -10,12 +10,20 @@ namespace QueueReadingChannelsSample
     public class BoundedMessageChannel
     {
         private const int MaxMessagesInChannel = 250;
-        private readonly Channel<Message> _channel = Channel.CreateBounded<Message>(MaxMessagesInChannel);
 
+        private readonly Channel<Message> _channel;
         private readonly ILogger<BoundedMessageChannel> _logger;
 
         public BoundedMessageChannel(ILogger<BoundedMessageChannel> logger)
         {
+            var options = new BoundedChannelOptions(MaxMessagesInChannel)
+            {
+                SingleReader = true,
+                SingleWriter = true
+            };
+
+            _channel = Channel.CreateBounded<Message>(options);
+
             _logger = logger;
         }
 
