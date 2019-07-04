@@ -17,15 +17,18 @@ namespace QueueReadingChannelsSample
         private readonly ILogger<QueueReaderService> _logger;
         private readonly IPollingSqsReader _pollingSqsReader;
         private readonly BoundedMessageChannel _boundedMessageChannel;
+        private readonly IHostApplicationLifetime _hostApplicationLifetime;
 
         public QueueReaderService(
             ILogger<QueueReaderService> logger, 
             IPollingSqsReader pollingSqsReader,
-            BoundedMessageChannel boundedMessageChannel)
+            BoundedMessageChannel boundedMessageChannel,
+            IHostApplicationLifetime hostApplicationLifetime)
         {
             _logger = logger;
             _pollingSqsReader = pollingSqsReader;
             _boundedMessageChannel = boundedMessageChannel;
+            _hostApplicationLifetime = hostApplicationLifetime;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -51,23 +54,38 @@ namespace QueueReadingChannelsSample
                         // and have time to process them even after shutdown if requested.
                         await _boundedMessageChannel.WriteMessagesAsync(messages);
                     }
+                    catch (OperationCanceledException)
+                    {
+                        // Log an swallow as the while loop will end gracefully when cancellation has been requested
+                        _logger.OperationCancelledExceptionOccurred();
+                    }
+                    catch (AmazonSqsException ex) when (ex.Message.Contains(
+                        "The security token included in the request is expired"))
+                    {
+                        Log.SqsAuthException(_logger);
+                        _hostApplicationLifetime.StopApplication(); // we can't authenticate so stop entirely
+                    }
                     catch (Exception ex)
                     {
-                        // This example logs and swallows all exceptions so the read loop continues in the 
-                        // event of an exception. We may want to conditionally re-throw and break from the loop,
-                        // or potentially, trigger application shutdown entirely for some critical exceptions.
-
+                        // Log and swallows all other exceptions so the read loop continues.
                         _logger.ExceptionOccurred(ex);
                     }
                 }
             }
             catch (Exception ex)
             {
+                // We shouldn't get here as the task instance while loop should catch all exceptions.
+                // We'll include it just in case anything escapes due to future changes.
+
                 _logger.ExceptionOccurred(ex);
+
+                // Complete writer and include the exception which will also throw in the reader.
                 _boundedMessageChannel.CompleteWriter(ex);
             }
             finally // Ensure we always complete the writer.
             {
+                // Ensure we always complete the writer at shutdown or due to exceptions.
+                // This ensures consumers know when there is nothing left to read and never will be.
                 _boundedMessageChannel.TryCompleteWriter(); // May have completed in the exception handling.
 
                 Log.StoppedReading(_logger);
@@ -80,6 +98,7 @@ namespace QueueReadingChannelsSample
             public static readonly EventId ReaderStopping = new EventId(101, "ReaderStopping");
             public static readonly EventId StoppedReading = new EventId(102, "StoppedReading");
             public static readonly EventId ReceivedMessages = new EventId(110, "ReceivedMessages");
+            public static readonly EventId CriticalSqsException = new EventId(120, "CriticalSqsException");
         }
 
         private static class Log
@@ -116,6 +135,14 @@ namespace QueueReadingChannelsSample
             public static void ReceivedMessages(ILogger logger, int messageCount)
             {
                 _receivedMessages(logger, messageCount, null);
+            }
+
+            public static void SqsAuthException(ILogger logger)
+            {
+                if (logger.IsEnabled(LogLevel.Critical))
+                {
+                    logger.Log(LogLevel.Critical, EventIds.CriticalSqsException, "Unable to authenticate with AWS SQS. Stopping application!");
+                }
             }
         }
     }
