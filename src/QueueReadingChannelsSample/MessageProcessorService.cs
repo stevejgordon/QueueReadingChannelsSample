@@ -23,7 +23,7 @@ namespace QueueReadingChannelsSample
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             stoppingToken.Register(() => _logger.LogWarning("Message processor stopping!"));
-            
+
             _logger.LogInformation("Start message processing from the channel.");
 
             var tasks = Enumerable.Range(1, MaxTaskInstances).Select(x => ProcessMessages(x));
@@ -51,10 +51,8 @@ namespace QueueReadingChannelsSample
                     {
                         // if errors occur, we will probably send this to a poison queue
                     }
-                    finally
-                    {
-                        // delete the message from the main queue
-                    }                    
+
+                    // delete the message from the main queue
 
                     _logger.LogInformation("Read and processed message with ID '{MessageId}' from the channel in instance {Instance}.", message.MessageId, instance);
                 }

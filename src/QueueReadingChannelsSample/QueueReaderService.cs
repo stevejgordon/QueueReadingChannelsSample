@@ -33,9 +33,13 @@ namespace QueueReadingChannelsSample
                 var tasks = Enumerable.Range(1, MaxTaskInstances).Select(x => PollForAndWriteMessages(x));
                 await Task.WhenAll(tasks);
             }
-            catch(Exception ex)
+            catch (OperationCanceledException)
             {
-                _logger.LogError(ex, "An exception occured during queue reading");
+                // swallow as nothing needs to know if the operation was cancelled in this background service;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An exception occurred during queue reading");
             }
             finally // ensure we always complete the writer even if exception occurs.
             {
@@ -51,32 +55,21 @@ namespace QueueReadingChannelsSample
                 {
                     while (!stoppingToken.IsCancellationRequested)
                     {
-                        Message[] messages = Array.Empty<Message>();
+                        // safe to cancel at this point if the polling reader has not yet received messages
+                        var messages = await _pollingSqsReader.PollForMessagesAsync(stoppingToken);
 
-                        try
-                        {
-                            messages = await _pollingSqsReader.PollForMessagesAsync(stoppingToken);
-                        }
-                        catch (OperationCanceledException)
-                        {
-                            // swallow as nothing needs to know if the operation was cancelled in this background service;
-                        }
-                        finally
-                        {
-                            _logger.LogInformation("Read {MessageCount} messages from the queue in task instance {Instance}.", messages.Length, instance);
+                        _logger.LogInformation("Read {MessageCount} messages from the queue in task instance {Instance}.", messages.Length, instance);
 
-                            // once we have some messages we won't pass cancellation so we add them to the channel and have time to process them even after shutdown
-                            await _boundedMessageChannel.WriteMessagesAsync(messages);
+                        // once we have some messages we won't pass cancellation so we add them to the channel and have time to process them during shutdown
+                        await _boundedMessageChannel.WriteMessagesAsync(messages);
 
-                            count += messages.Length;
-                        }
+                        count += messages.Length;
                     }
                 }
                 finally
                 {
-                    _logger.LogInformation("Finished writing in instance {Instance}.", instance);
-                    _logger.LogInformation("Wrote a total of {TotalMessages} messages in instance {Instance}.", count, instance);
-                }                
+                    _logger.LogInformation("Finished writing in instance {Instance}. Wrote {TotalMessages} msgs.", count, instance);
+                }
             }
         }
     }
