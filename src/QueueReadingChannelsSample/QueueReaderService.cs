@@ -32,7 +32,7 @@ namespace QueueReadingChannelsSample
             {
                 while (!stoppingToken.IsCancellationRequested)
                 {
-                    var messages = await _pollingSqsReader.PollForMessagesAsync(stoppingToken); // may propogate a TaskCanceledException
+                    var messages = await _pollingSqsReader.PollForMessagesAsync(stoppingToken);
 
                     _logger.LogInformation("Read {MessageCount} messages from the queue.", messages.Length);
 

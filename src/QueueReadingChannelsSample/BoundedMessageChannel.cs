@@ -28,9 +28,7 @@ namespace QueueReadingChannelsSample
         }
 
         public IAsyncEnumerable<Message> ReadAllAsync(CancellationToken ct = default) => _channel.Reader.ReadAllAsync(ct);
-
-        public ChannelReader<Message> Reader => _channel.Reader;
-
+        
         public async Task WriteMessagesAsync(Message[] messages, CancellationToken ct = default)
         {
             var index = 0;
