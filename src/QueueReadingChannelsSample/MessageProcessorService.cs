@@ -4,19 +4,25 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using QueueReadingChannelsSample.Configuration;
 
 namespace QueueReadingChannelsSample
 {
     public class MessageProcessorService : BackgroundService
     {
-        const int MaxTaskInstances = 5;
-
         private readonly ILogger<MessageProcessorService> _logger;
         private readonly BoundedMessageChannel _boundedMessageChannel;
 
-        public MessageProcessorService(ILogger<MessageProcessorService> logger, BoundedMessageChannel boundedMessageChannel)
+        private readonly int _maxTaskInstances;
+
+        public MessageProcessorService(
+            ILogger<MessageProcessorService> logger,
+            IOptions<MessageProcessingConfig> queueReadingConfig,
+            BoundedMessageChannel boundedMessageChannel)
         {
             _logger = logger;
+            _maxTaskInstances = queueReadingConfig.Value.MaxConcurrentProcessors;
             _boundedMessageChannel = boundedMessageChannel;
         }
 
@@ -26,7 +32,7 @@ namespace QueueReadingChannelsSample
 
             _logger.LogInformation("Start message processing from the channel.");
 
-            var tasks = Enumerable.Range(1, MaxTaskInstances).Select(x => ProcessMessages(x));
+            var tasks = Enumerable.Range(1, _maxTaskInstances).Select(x => ProcessMessages(x));
 
             await Task.WhenAll(tasks);
 

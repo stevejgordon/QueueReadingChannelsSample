@@ -1,6 +1,7 @@
 using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using QueueReadingChannelsSample.Configuration;
 using QueueReadingChannelsSample.Sqs;
 
 namespace QueueReadingChannelsSample
@@ -27,6 +28,9 @@ namespace QueueReadingChannelsSample
                     {
                         option.ShutdownTimeout = TimeSpan.FromSeconds(30);
                     });
+
+                    services.Configure<QueueReaderConfig>(hostContext.Configuration.GetSection("QueueReading"));
+                    services.Configure<MessageProcessingConfig>(hostContext.Configuration.GetSection("MessageProcessing"));
 
                     services.AddSingleton<IPollingSqsReader, FakePollingSqsReader>();
                     services.AddSingleton<BoundedMessageChannel>();

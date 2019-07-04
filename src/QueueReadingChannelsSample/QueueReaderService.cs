@@ -4,20 +4,28 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using QueueReadingChannelsSample.Configuration;
 using QueueReadingChannelsSample.Sqs;
 
 namespace QueueReadingChannelsSample
 {
     public class QueueReaderService : BackgroundService
     {
-        const int MaxTaskInstances = 5;
         private readonly ILogger<QueueReaderService> _logger;
         private readonly IPollingSqsReader _pollingSqsReader;
         private readonly BoundedMessageChannel _boundedMessageChannel;
 
-        public QueueReaderService(ILogger<QueueReaderService> logger, IPollingSqsReader pollingSqsReader, BoundedMessageChannel boundedMessageChannel)
+        private readonly int _maxTaskInstances;
+
+        public QueueReaderService(
+            ILogger<QueueReaderService> logger,
+            IOptions<QueueReaderConfig> queueReadingConfig,
+            IPollingSqsReader pollingSqsReader,
+            BoundedMessageChannel boundedMessageChannel)
         {
             _logger = logger;
+            _maxTaskInstances = queueReadingConfig.Value.MaxConcurrentReaders;
             _pollingSqsReader = pollingSqsReader;
             _boundedMessageChannel = boundedMessageChannel;
         }
@@ -30,7 +38,7 @@ namespace QueueReadingChannelsSample
 
             try
             {
-                var tasks = Enumerable.Range(1, MaxTaskInstances).Select(x => PollForAndWriteMessages(x));
+                var tasks = Enumerable.Range(1, _maxTaskInstances).Select(x => PollForAndWriteMessages(x));
                 await Task.WhenAll(tasks);
             }
             catch (OperationCanceledException)
