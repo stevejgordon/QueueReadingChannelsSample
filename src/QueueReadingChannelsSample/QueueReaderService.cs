@@ -11,6 +11,10 @@ using QueueReadingChannelsSample.Sqs;
 
 namespace QueueReadingChannelsSample
 {
+    /// <summary>
+    /// A <see cref="BackgroundService"/> which continually polls for messages whilst the application
+    /// is running. Received messages are written to a <see cref="System.Threading.Channels.Channel{T}"/>.
+    /// </summary>
     public sealed class QueueReaderService : BackgroundService
     {
         private readonly ILogger<QueueReaderService> _logger;
