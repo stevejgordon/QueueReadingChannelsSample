@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -44,9 +45,8 @@ namespace QueueReadingChannelsSample
             }            
         }
 
-        public void CompleteWriter()
-        {
-            _channel.Writer.Complete();
-        }
+        public void CompleteWriter(Exception ex = null) =>_channel.Writer.Complete(ex);
+
+        public bool TryCompleteWriter(Exception ex = null) => _channel.Writer.TryComplete(ex);
     }
 }
