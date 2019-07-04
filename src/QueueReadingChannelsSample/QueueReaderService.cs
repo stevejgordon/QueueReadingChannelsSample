@@ -92,7 +92,7 @@ namespace QueueReadingChannelsSample
                             // Log an swallow as the while loop will end gracefully when cancellation has been requested
                             _logger.OperationCancelledExceptionOccurred();
                         }
-                        catch (AmazonSQSException ex) when (ex.Message.Contains(
+                        catch (AmazonSqsException ex) when (ex.Message.Contains(
                             "The security token included in the request is expired"))
                         {
                             Log.SqsAuthException(_logger);

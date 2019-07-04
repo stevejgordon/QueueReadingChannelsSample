@@ -15,7 +15,7 @@ namespace QueueReadingChannelsSample.Sqs
             {
                 await Task.Delay(50, ct); // Simulate slight delay for exception.
 
-                throw new AmazonSQSException();
+                throw new AmazonSqsException();
             }
 
             await Task.Delay(Random.Value.Next(1000, 5000), ct); // Simulate waiting for some messages
