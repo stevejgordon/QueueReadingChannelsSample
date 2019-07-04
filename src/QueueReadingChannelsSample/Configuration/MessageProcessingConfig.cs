@@ -2,6 +2,6 @@
 {
     public class MessageProcessingConfig
     {
-        public int MaxConcurrentProcessors { get; set; }
+        public int MaxConcurrentProcessors { get; set; } = 1;
     }
 }

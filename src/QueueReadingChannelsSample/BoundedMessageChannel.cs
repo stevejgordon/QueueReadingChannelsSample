@@ -3,20 +3,20 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using QueueReadingChannelsSample.Configuration;
 using QueueReadingChannelsSample.Sqs;
 
 namespace QueueReadingChannelsSample
 {
     public class BoundedMessageChannel
     {
-        private const int MaxMessagesInChannel = 250;
-
         private readonly Channel<Message> _channel;
         private readonly ILogger<BoundedMessageChannel> _logger;
 
-        public BoundedMessageChannel(ILogger<BoundedMessageChannel> logger)
+        public BoundedMessageChannel(ILogger<BoundedMessageChannel> logger, IOptions<MessageChannelConfig> messageChannelConfig)
         {
-            var options = new BoundedChannelOptions(MaxMessagesInChannel);
+            var options = new BoundedChannelOptions(messageChannelConfig.Value.MaxBoundedCapacity);
 
             _channel = Channel.CreateBounded<Message>(options);
 
@@ -24,9 +24,7 @@ namespace QueueReadingChannelsSample
         }
 
         public IAsyncEnumerable<Message> ReadAllAsync(CancellationToken ct = default) => _channel.Reader.ReadAllAsync(ct);
-
-        public ChannelReader<Message> Reader => _channel.Reader;
-
+        
         public async Task WriteMessagesAsync(Message[] messages, CancellationToken ct = default)
         {
             var index = 0;

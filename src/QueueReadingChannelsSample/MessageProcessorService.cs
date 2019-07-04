@@ -32,8 +32,9 @@ namespace QueueReadingChannelsSample
 
             _logger.LogInformation("Start message processing from the channel.");
 
-            var tasks = Enumerable.Range(1, _maxTaskInstances).Select(x => ProcessMessages(x));
+            _logger.LogInformation("Starting {InstanceCount} message processing tasks.", _maxTaskInstances);
 
+            var tasks = Enumerable.Range(1, _maxTaskInstances).Select(ProcessMessages);
             await Task.WhenAll(tasks);
 
             _logger.LogInformation("Finished reading all messages from the channel.");
@@ -49,7 +50,7 @@ namespace QueueReadingChannelsSample
                     {
                         // process the message here
 
-                        await Task.Delay(500); // simulate processing work
+                        await Task.Delay(500); // simulate processing work which we won't cancel
 
                         count++;
                     }

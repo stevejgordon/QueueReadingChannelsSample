@@ -31,6 +31,7 @@ namespace QueueReadingChannelsSample
 
                     services.Configure<QueueReaderConfig>(hostContext.Configuration.GetSection("QueueReading"));
                     services.Configure<MessageProcessingConfig>(hostContext.Configuration.GetSection("MessageProcessing"));
+                    services.Configure<MessageChannelConfig>(hostContext.Configuration.GetSection("MessageChannel"));
 
                     services.AddSingleton<IPollingSqsReader, FakePollingSqsReader>();
                     services.AddSingleton<BoundedMessageChannel>();

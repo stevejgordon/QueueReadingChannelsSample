@@ -38,7 +38,8 @@ namespace QueueReadingChannelsSample
 
             try
             {
-                var tasks = Enumerable.Range(1, _maxTaskInstances).Select(x => PollForAndWriteMessages(x));
+                _logger.LogInformation("Starting {InstanceCount} queue reading tasks.", _maxTaskInstances);
+                var tasks = Enumerable.Range(1, _maxTaskInstances).Select(PollForAndWriteMessages);
                 await Task.WhenAll(tasks);
             }
             catch (OperationCanceledException)
